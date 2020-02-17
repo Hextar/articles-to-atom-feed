@@ -1,14 +1,25 @@
 import sys
 import argparse
 from argparse import ArgumentParser
+import newspaper
+from newspaper import news_pool
+from newspaper import Article
+from werkzeug.contrib.atom import AtomFeed
 
-# https://www.costasmeralda.it/in-spiaggia-con-gli-amici-a-quattro-zampe/
+
+# IT: https://www.costasmeralda.it/in-spiaggia-con-gli-amici-a-quattro-zampe/
+# EN: https://www.nytimes.com/column/learning-article-of-the-day
+
 
 def main():
 	try:	
 		parser = ArgumentParser()
 		parser.add_argument("-u", "--url", dest="url", help="url of the articles to be parse")
+		parser.add_argument("-l", "--lang", dest="language", help="url of the articles to be parse")
 		args = parser.parse_args()
+
+		if (args.url == None):
+			print('ERROR ARGUMENT PARSING: an url argument is required')
 		return args.url
 
 	except Exception as e:
@@ -16,26 +27,27 @@ def main():
 
 
 def scrapeAllUrls(url):
-	import newspaper
-
 	try:
-		url_list = []
-		html_page = newspaper.build(url)
+		url_list = list()
+		# Instantiate newspaper object
+		url_paper = newspaper.build(url, memoize_articles=False)
 
-		for article in html_page.articles:
-			print(article.url)
+		# Activate newspaper multi-threading
+		papers = [url_paper]
+		news_pool.set(papers, threads_per_source=2)
+		news_pool.join()
+
+		# Append the articles found in the url
+		for article in url_paper.articles:
 			url_list.append(article.url)
 
-		# Return the articles found in the url
 		return url_list
 			
 	except Exception as e:
-		print('ERROR, SCRAPE URL LIST :', e)
+		print('ERROR, SCRAPE URL LIST: ', e)
 
 
 def scrapeArticle(url):
-	from newspaper import Article
-
 	try:
 		# Instantiate the article object
 		article = Article(url)
@@ -56,16 +68,24 @@ def scrapeArticle(url):
 		print(article.text)
 
 	except Exception as e:
-		print('ERROR, SCRAPE ARTICLE DETAILS', e)
+		print('ERROR, SCRAPE ARTICLE DETAILS: ', e)
 
+
+def parseArticle():
+	pass
+
+
+def writeToFile():
+	pass
 
 if __name__ == "__main__":
 	argument_url = main()
-	url_list = list()
 
-	# Get all article urls in the url
-	url_list = scrapeAllUrls(argument_url)
-	print(url_list)
+	if (argument_url):
+		# Get all article urls in the url
+		url_list = scrapeAllUrls(argument_url)
+		print(url_list)
 
-	for url in url_list:
-		scrapeArticle(url)
+		if (url_list != None):
+			for url in url_list:
+				scrapeArticle(url)
