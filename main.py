@@ -16,26 +16,34 @@ from datetime import datetime
 # A Class of support representing an Atom Entry
 class Entry:
 	id = ''
+	authors = []
 	title = ''
 	link = ''
 	updated = ''
+	text = ''
+	summary = ''
 
-	def __init__(self,  link, title): 
+	def __init__(self, link, authors, title, text, summary): 
 		self.id = uuid.uuid1().hex
+		self.authors = authors
 		self.title = title
 		self.link = link
 		self.updated = datetime.now().isoformat()+'Z'
+		self.text = text
+		self.summary = summary
 
 
 def main():
 	try:	
 		parser = ArgumentParser()
 		parser.add_argument("-u", "--url", dest="url", help="url of the articles to be parse")
+		parser.add_argument("-f", "--full", dest="full", help="full text in content")
 		args = parser.parse_args()
 
 		if (args.url == None):
 			print('ERROR ARGUMENT PARSING: an url argument is required')
-		return args.url
+		
+		return args.url, args.full != None
 
 	except Exception as e:
 		print('ERROR, ARGUMENT PARSING: ', e)
@@ -77,7 +85,12 @@ def scrapeArticle(url):
 		# Natural Language Processing
 		article.nlp()
 
-		entry = Entry(url, article.title)
+		authors = article.authors if article.authors else ''
+		title = article.title if article.title else ''
+		text = article.text if article.text else ''
+		summary = article.summary if article.summary else ''
+
+		entry = Entry(url, authors, title, text, summary)
 
 		return entry
 
@@ -85,30 +98,36 @@ def scrapeArticle(url):
 		print('ERROR, SCRAPE ARTICLE DETAILS: ', e)
 
 
-def createAtomFeed(main_entry, entries):
+def createAtomFeed(main_entry, entries, full_content=False):
 	# Instantiate Feed Generator object
 	fg = FeedGenerator()
-	fg.id(main_entry.id)
+	fg.id(main_entry.link)
 	fg.title(main_entry.title)
 	fg.link(href=main_entry.link, rel='alternate')	
 	fg.updated(main_entry.updated)
 
 	for entry in entries:
 		if (entry and isinstance(entry, Entry)):
-			# Append an entry to the feed
-			fe = fg.add_entry()
-			fe.id(entry.id)
-			fe.title(entry.title)
-			fe.link(href=entry.link, rel='alternate')
-			fe.updated(entry.updated)
-	
+			# Append an entry to the feed only if it has an auothr
+			# Cause otherwise it will cause the feed to be invalid
+			if (entry.authors and len(entry.authors)):
+				fe = fg.add_entry()
+				fe.id(entry.link)
+				for author in entry.authors:
+					fe.author(name=author)
+				fe.title(entry.title)
+				fe.link(href=entry.link, rel='alternate')
+				fe.updated(entry.updated)
+				if (full_content):
+					fe.content(entry.text)
+				fe.summary(entry.summary)
 	
 	# Write the ATOM feed to a file
-	fg.atom_file('atom.xml') 
+	fg.atom_file('./atom_feeds/atom_' + main_entry.title.replace(' ', '_').lower() + '_' + main_entry.updated + '.xml') 
 		
 
 if __name__ == "__main__":
-	argument_url = main()
+	argument_url, full_content = main()
 	entries = list()
 	url_list = list()
 	title = ''
@@ -125,6 +144,6 @@ if __name__ == "__main__":
 				entries.append(scrapeArticle(url))
 				
 		if (entries != None):
-			createAtomFeed(main_entry, entries)
+			createAtomFeed(main_entry, entries, full_content)
 
 	
