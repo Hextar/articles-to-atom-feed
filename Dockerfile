@@ -15,5 +15,4 @@ RUN python -m nltk.downloader punkt
 
 COPY . /src
 
-# CMD ["python", "main.py", "-u","(url)"]
 ENTRYPOINT ["python", "./main.py"]

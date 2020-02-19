@@ -1,8 +1,10 @@
+import os
 import sys
 import argparse
 import newspaper
 import nltk
 import validators
+import logging
 from argparse import ArgumentParser
 from newspaper import news_pool
 from newspaper import Article
@@ -14,8 +16,14 @@ from model.entry import Entry
 # IT: https://www.costasmeralda.it/in-spiaggia-con-gli-amici-a-quattro-zampe/
 # EN: https://www.nytimes.com/column/learning-article-of-the-day
 
-def calc():
-	return 0
+
+# Creating the logger
+logging.basicConfig(level=logging.INFO,
+                    format='[%(asctime)s]: {} %(levelname)s %(message)s'.format(os.getpid()),
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    handlers=[logging.StreamHandler()])
+
+logger = logging.getLogger()
 
 
 def parse_args(args):
@@ -31,7 +39,7 @@ def parse_args(args):
 		return parser.parse_args(args)
 
 	except Exception as e:
-		print('ERROR, ARGUMENT PARSING: ', e)
+		logger.error('ERROR, ARGUMENT PARSING: ', e)
 
 
 def scrape_all_urls(url):
@@ -53,7 +61,7 @@ def scrape_all_urls(url):
 		return url_list
 			
 	except Exception as e:
-		print('ERROR, SCRAPE URL LIST: ', e)
+		logger.error('ERROR, SCRAPE URL LIST: ', e)
 
 
 def scrape_article(url):
@@ -81,7 +89,7 @@ def scrape_article(url):
 		return entry
 
 	except Exception as e:
-		print('ERROR, SCRAPE ARTICLE DETAILS: ', e)
+		logger.error('ERROR, SCRAPE ARTICLE DETAILS: ', e)
 
 
 def create_atom_feed(main_entry, entries, full_content=False):
@@ -109,7 +117,8 @@ def create_atom_feed(main_entry, entries, full_content=False):
 				fe.updated(entry.updated)
 				if (full_content):
 					fe.content(entry.text)
-				fe.summary(entry.summary)
+				if (entry.summary):
+					fe.summary(entry.summary)
 	
 	# Write the ATOM feed to a file
 	fg.atom_file('./atom_feeds/atom_' + main_entry.title.replace(' ', '_').lower() + '_' + main_entry.updated + '.xml') 
@@ -143,9 +152,9 @@ if __name__ == "__main__":
 			create_atom_feed(main_entry, entries, full_content)
 
 	elif (argument_url):
-		print('ERROR ARGUMENT PARSING: the specified argument is not a valid url')
+		logger.error('ERROR ARGUMENT PARSING: the specified argument is not a valid urpl')
 	
 	else:
-		print('ERROR ARGUMENT PARSING: an url argument is required')
+		logger.error('ERROR ARGUMENT PARSING: an url argument is required')
 
 	
