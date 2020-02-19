@@ -14,6 +14,10 @@ from model.entry import Entry
 # IT: https://www.costasmeralda.it/in-spiaggia-con-gli-amici-a-quattro-zampe/
 # EN: https://www.nytimes.com/column/learning-article-of-the-day
 
+def calc():
+	return 0
+
+
 def parse_args(args):
 	try:	
 		parser = ArgumentParser()
@@ -119,11 +123,12 @@ if __name__ == "__main__":
 	# Get the CLI arguments
 	parser = parse_args(sys.argv[1:])
 	argument_url = parser.url
-	full_content = parser.full
+	full_content = parser.full == 'True' or parser.full == 'true'
 
 	# If an url is passed
 	if (argument_url and validators.url(argument_url)):
 
+		# Get the metadatas of the main url
 		main_entry = scrape_article(argument_url)
 
 		# Get all article urls in the url
@@ -131,6 +136,7 @@ if __name__ == "__main__":
 
 		if (url_list != None):
 			for url in url_list:
+				# Get the metadatas of the url
 				entries.append(scrape_article(url))
 				
 		if (entries != None):
