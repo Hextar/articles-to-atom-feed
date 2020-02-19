@@ -25,3 +25,7 @@ docker image -t scrap-and-atom-feed build .
 docker run --rm scrap-and-atom-feed -u [url]
 ```
 
+And then you will find the correspondant .xml atom feed in the directory 'atom_feeds'.
+The filename has a structure 'atom_[MAIN_URL_TITLE]_[UPDATED DATE].xml', where MAIN_URL_TITLE
+is the title extracted by newspaper3k from the main url and UPDATED_DATE is the date of feed's last
+update, basically a datetime.now()

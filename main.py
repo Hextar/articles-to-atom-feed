@@ -2,54 +2,35 @@ import sys
 import argparse
 import newspaper
 import nltk
-import uuid 
+import validators
 from argparse import ArgumentParser
 from newspaper import news_pool
 from newspaper import Article
 from feedgen.feed import FeedGenerator
-from datetime import datetime
+from model.entry import Entry
 
 
+# Example of url to be scraped
 # IT: https://www.costasmeralda.it/in-spiaggia-con-gli-amici-a-quattro-zampe/
 # EN: https://www.nytimes.com/column/learning-article-of-the-day
 
-# A Class of support representing an Atom Entry
-class Entry:
-	id = ''
-	authors = []
-	title = ''
-	link = ''
-	updated = ''
-	text = ''
-	summary = ''
-
-	def __init__(self, link, authors, title, text, summary): 
-		self.id = uuid.uuid1().hex
-		self.authors = authors
-		self.title = title
-		self.link = link
-		self.updated = datetime.now().isoformat()+'Z'
-		self.text = text
-		self.summary = summary
-
-
-def main():
+def parse_args(args):
 	try:	
 		parser = ArgumentParser()
-		parser.add_argument("-u", "--url", dest="url", help="url of the articles to be parse")
-		parser.add_argument("-f", "--full", dest="full", help="full text in content")
-		args = parser.parse_args()
 
-		if (args.url == None):
-			print('ERROR ARGUMENT PARSING: an url argument is required')
+		# Argument for the url to be scraped
+		parser.add_argument("-u", "--url", dest="url", help="url of the articles to be parse")
 		
-		return args.url, args.full != None
+		# Argument boolean to decide if full text need to be added to the atom feed
+		parser.add_argument("-f", "--full", dest="full", help="full text in content")
+		
+		return parser.parse_args(args)
 
 	except Exception as e:
 		print('ERROR, ARGUMENT PARSING: ', e)
 
 
-def scrapeAllUrls(url):
+def scrape_all_urls(url):
 	try:
 		url_list = list()
 
@@ -71,7 +52,7 @@ def scrapeAllUrls(url):
 		print('ERROR, SCRAPE URL LIST: ', e)
 
 
-def scrapeArticle(url):
+def scrape_article(url):
 	try:
 		# Instantiate the article object
 		article = Article(url)
@@ -90,6 +71,7 @@ def scrapeArticle(url):
 		text = article.text if article.text else ''
 		summary = article.summary if article.summary else ''
 
+		# Create the Entry
 		entry = Entry(url, authors, title, text, summary)
 
 		return entry
@@ -98,7 +80,7 @@ def scrapeArticle(url):
 		print('ERROR, SCRAPE ARTICLE DETAILS: ', e)
 
 
-def createAtomFeed(main_entry, entries, full_content=False):
+def create_atom_feed(main_entry, entries, full_content=False):
 	# Instantiate Feed Generator object
 	fg = FeedGenerator()
 	fg.id(main_entry.link)
@@ -106,8 +88,11 @@ def createAtomFeed(main_entry, entries, full_content=False):
 	fg.link(href=main_entry.link, rel='alternate')	
 	fg.updated(main_entry.updated)
 
+	# For each article found in the url scraped
+	# extract the article metadata
 	for entry in entries:
 		if (entry and isinstance(entry, Entry)):
+
 			# Append an entry to the feed only if it has an auothr
 			# Cause otherwise it will cause the feed to be invalid
 			if (entry.authors and len(entry.authors)):
@@ -127,23 +112,34 @@ def createAtomFeed(main_entry, entries, full_content=False):
 		
 
 if __name__ == "__main__":
-	argument_url, full_content = main()
 	entries = list()
 	url_list = list()
 	title = ''
 
-	if (argument_url):
+	# Get the CLI arguments
+	parser = parse_args(sys.argv[1:])
+	argument_url = parser.url
+	full_content = parser.full
 
-		main_entry = scrapeArticle(argument_url)
+	# If an url is passed
+	if (argument_url and validators.url(argument_url)):
+
+		main_entry = scrape_article(argument_url)
 
 		# Get all article urls in the url
-		url_list = scrapeAllUrls(argument_url)
+		url_list = scrape_all_urls(argument_url)
 
 		if (url_list != None):
 			for url in url_list:
-				entries.append(scrapeArticle(url))
+				entries.append(scrape_article(url))
 				
 		if (entries != None):
-			createAtomFeed(main_entry, entries, full_content)
+			create_atom_feed(main_entry, entries, full_content)
+
+	elif (argument_url):
+		print('ERROR ARGUMENT PARSING: the specified argument is not a valid url')
+	
+	else:
+		print('ERROR ARGUMENT PARSING: an url argument is required')
 
 	
