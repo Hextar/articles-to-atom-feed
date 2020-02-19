@@ -39,7 +39,7 @@ def parse_args(args):
 		return parser.parse_args(args)
 
 	except Exception as e:
-		logger.error('ERROR, ARGUMENT PARSING: ', e)
+		logger.error('ARGUMENT PARSING: ', e)
 
 
 def scrape_all_urls(url):
@@ -61,7 +61,7 @@ def scrape_all_urls(url):
 		return url_list
 			
 	except Exception as e:
-		logger.error('ERROR, SCRAPE URL LIST: ', e)
+		logger.error('SCRAPE URL LIST: ', e)
 
 
 def scrape_article(url):
@@ -89,7 +89,7 @@ def scrape_article(url):
 		return entry
 
 	except Exception as e:
-		logger.error('ERROR, SCRAPE ARTICLE DETAILS: ', e)
+		logger.error('SCRAPE ARTICLE DETAILS: ', e)
 
 
 def create_atom_feed(main_entry, entries, full_content=False):
@@ -152,9 +152,9 @@ if __name__ == "__main__":
 			create_atom_feed(main_entry, entries, full_content)
 
 	elif (argument_url):
-		logger.error('ERROR ARGUMENT PARSING: the specified argument is not a valid urpl')
+		logger.error('ARGUMENT PARSING: the specified argument is not a valid urpl')
 	
 	else:
-		logger.error('ERROR ARGUMENT PARSING: an url argument is required')
+		logger.error('ARGUMENT PARSING: an url argument is required')
 
 	
